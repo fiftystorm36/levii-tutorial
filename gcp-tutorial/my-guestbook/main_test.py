@@ -1,6 +1,4 @@
-#!/usr/bin/env python
-
-# Copyright 2016 Google Inc.
+# Copyright 2015 Google Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,25 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import uuid
-import os
-import requests
+import webtest
 
-URL = os.environ.get('GUESTBOOK_URL')
+import main
 
 
-def test_e2e():
-    assert URL
-    print ("Running test against {}".format(URL))
-    r = requests.get(URL)
-    assert b'Guestbook' in r.content
-    u = uuid.uuid4()
-    data = {'content': str(u)}
-    r = requests.post(URL + '/sign', data)
-    assert r.status_code == 200
-    r = requests.get(URL)
-    assert str(u).encode('utf-8') in r.content
-    print("Success")
-
-if __name__ == "__main__":
-    test_e2e()
+def test_app(testbed):
+    app = webtest.TestApp(main.app)
+    response = app.get('/')
+    assert response.status_int == 200
