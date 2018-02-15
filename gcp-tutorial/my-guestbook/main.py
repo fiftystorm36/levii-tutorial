@@ -49,6 +49,31 @@ class Greeting(ndb.Model):
     def query_book(cls, ancestor_key):
         return cls.query(ancestor=ancestor_key).order(-cls.date)
 
+class MainPage(webapp2.RequestHandler):
+    """This page contains list of books"""
+    def get(self):
+        self.response.out.write('<html><body>')
+        guestbook_name = self.request.get('guestbook_name')
+        ancestor_key = ndb.Key("Book", guestbook_name or "*notitle*")
+        greetings = Greeting.query_book(ancestor_key).fetch(20)
+
+        book_blockquotes = [
+        '<blockquote>Book a</blockquote>',
+        '<blockquote>Book b</blockquote>',
+        '<blockquote>Book c</blockquote>'
+        ]
+
+        self.response.out.write(textwrap.dedent("""\
+            <html>
+              <body>
+                <h1>List of Books</h1>
+                <div>{blockquotes}</div>
+              </body>
+            </html>""").format(
+                blockquotes='\n'.join(book_blockquotes),
+                sign=urllib.urlencode({'guestbook_name': guestbook_name}),
+                guestbook_name=cgi.escape(guestbook_name)))
+
 class BookPage(webapp2.RequestHandler):
     """This page contains greetings in a book which is selected in MainPage"""
     def get(self):
@@ -65,6 +90,7 @@ class BookPage(webapp2.RequestHandler):
         self.response.out.write(textwrap.dedent("""\
             <html>
               <body>
+                <h1>Book: {guestbook_name}</h1>
                 {blockquotes}
                 <form action="/sign?{sign}" method="post">
                   <div>
@@ -83,6 +109,7 @@ class BookPage(webapp2.RequestHandler):
                 </form>
               </body>
             </html>""").format(
+                currentbookname=cgi.escape(guestbook_name),
                 blockquotes='\n'.join(greeting_blockquotes),
                 sign=urllib.urlencode({'guestbook_name': guestbook_name}),
                 guestbook_name=cgi.escape(guestbook_name)))
@@ -104,7 +131,8 @@ class SubmitForm(webapp2.RequestHandler):
 
 
 app = webapp2.WSGIApplication([
-    ('/', BookPage),
+    ('/', MainPage),
+    ('/book', BookPage),
     ('/sign', SubmitForm)
 ])
 # [END all]
