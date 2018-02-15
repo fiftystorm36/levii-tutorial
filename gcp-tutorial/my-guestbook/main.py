@@ -66,8 +66,13 @@ class MainPage(webapp2.RequestHandler):
         self.response.out.write(textwrap.dedent("""\
             <html>
               <body>
-                <h1>List of Books</h1>
+                <h1>List of guestbooks</h1>
                 <div>{blockquotes}</div>
+                <form>
+                  New guestbook's name:
+                    <input value="{guestbook_name}" name="guestbook_name">
+                    <input type="submit" value="add">
+                </form>
               </body>
             </html>""").format(
                 blockquotes='\n'.join(book_blockquotes),
