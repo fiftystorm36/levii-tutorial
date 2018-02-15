@@ -30,26 +30,32 @@ from google.appengine.ext import ndb
 import webapp2
 
 
+# [START book]
+class Book(ndb.Model):
+    """Models an individual Book entry with name."""
+    name = ndb.StringProperty()
+
+    @classmethod
+    def query_book(cls):
+        return cls.query().order(cls.name)
+
 # [START greeting]
 class Greeting(ndb.Model):
     """Models an individual Guestbook entry with content and date."""
     content = ndb.StringProperty()
     date = ndb.DateTimeProperty(auto_now_add=True)
-# [END greeting]
 
-# [START query]
     @classmethod
     def query_book(cls, ancestor_key):
         return cls.query(ancestor=ancestor_key).order(-cls.date)
 
-
-class MainPage(webapp2.RequestHandler):
+class BookPage(webapp2.RequestHandler):
+    """This page contains greetings in a book which is selected in MainPage"""
     def get(self):
         self.response.out.write('<html><body>')
         guestbook_name = self.request.get('guestbook_name')
         ancestor_key = ndb.Key("Book", guestbook_name or "*notitle*")
         greetings = Greeting.query_book(ancestor_key).fetch(20)
-# [END query]
 
         greeting_blockquotes = []
         for greeting in greetings:
@@ -98,7 +104,7 @@ class SubmitForm(webapp2.RequestHandler):
 
 
 app = webapp2.WSGIApplication([
-    ('/', MainPage),
+    ('/', BookPage),
     ('/sign', SubmitForm)
 ])
 # [END all]
