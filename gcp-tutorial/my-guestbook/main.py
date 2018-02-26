@@ -64,9 +64,7 @@ class MainPage(webapp2.RequestHandler):
         self.response.out.write(textwrap.dedent("""\
             <html>
               <body>
-                <h1>
-                  {guestbook_name}
-                </h1>
+                <h1>{guestbook_name}</h1>
                 {blockquotes}
                 <form action="/sign?{sign}" method="post">
                   <div>
@@ -100,21 +98,16 @@ class ListPage(webapp2.RequestHandler):
         self.response.out.write(textwrap.dedent("""\
             <html>
               <body>
+              <h1>Guestbook List</h1>
                 {blockquotes}
-                <form action="/create?{create}" method="post">
+                <form action="/create" method="post">
                   <div>
-                    <textarea name="content" rows="3" cols="60">
+                    <textarea name="content" rows="1" cols="60">
                     </textarea>
                   </div>
                   <div>
-                    <input type="submit" value="Sign Guestbook">
+                    <input type="submit" value="Create New Guestbook">
                   </div>
-                </form>
-                <hr>
-                <form>
-                  Guestbook name:
-                    <input value="{guestbook_name}" name="guestbook_name">
-                    <input type="submit" value="switch">
                 </form>
               </body>
             </html>""").format(
@@ -140,12 +133,9 @@ class CreateForm(webapp2.RequestHandler):
         # We set the parent key on each 'Greeting' to ensure each guestbook's
         # greetings are in the same entity group.
         guestbook_name = self.request.get('guestbook_name')
-        greeting = Greeting(parent=ndb.Key("Book",
-                                           guestbook_name or "*notitle*"),
-                            content=self.request.get('content'))
-        greeting.put()
-        self.redirect('/?' + urllib.urlencode(
-            {'guestbook_name': guestbook_name}))
+        guestbook = Guestbook(name=guestbook_name)
+        guestbook.put()
+        self.redirect('/list')
 
 app = webapp2.WSGIApplication([
     ('/', MainPage),
