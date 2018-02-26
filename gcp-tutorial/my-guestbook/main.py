@@ -30,17 +30,23 @@ from google.appengine.ext import ndb
 import webapp2
 
 
-# [START greeting]
 class Greeting(ndb.Model):
     """Models an individual Guestbook entry with content and date."""
     content = ndb.StringProperty()
     date = ndb.DateTimeProperty(auto_now_add=True)
-# [END greeting]
 
-# [START query]
     @classmethod
     def query_book(cls, ancestor_key):
         return cls.query(ancestor=ancestor_key).order(-cls.date)
+
+
+class Guestbook(ndb.Model):
+    """Models an entry with each guestbook's name"""
+    name = ndb.StringProperty()
+
+    @classmethod
+    def query_book(cls):
+        return cls.query().order(cls.name)
 
 
 class MainPage(webapp2.RequestHandler):
@@ -49,7 +55,6 @@ class MainPage(webapp2.RequestHandler):
         guestbook_name = self.request.get('guestbook_name')
         ancestor_key = ndb.Key("Book", guestbook_name or "*notitle*")
         greetings = Greeting.query_book(ancestor_key).fetch(20)
-# [END query]
 
         greeting_blockquotes = []
         for greeting in greetings:
@@ -77,12 +82,13 @@ class MainPage(webapp2.RequestHandler):
                 </form>
               </body>
             </html>""").format(
-                blockquotes='\n'.join(greeting_blockquotes),
-                sign=urllib.urlencode({'guestbook_name': guestbook_name}),
-                guestbook_name=cgi.escape(guestbook_name)))
+            blockquotes='\n'.join(greeting_blockquotes),
+            sign=urllib.urlencode({'guestbook_name': guestbook_name}),
+            guestbook_name=cgi.escape(guestbook_name)))
 
 
-# [START submit]
+
+
 class SubmitForm(webapp2.RequestHandler):
     def post(self):
         # We set the parent key on each 'Greeting' to ensure each guestbook's
@@ -92,13 +98,19 @@ class SubmitForm(webapp2.RequestHandler):
                                            guestbook_name or "*notitle*"),
                             content=self.request.get('content'))
         greeting.put()
-# [END submit]
         self.redirect('/?' + urllib.urlencode(
             {'guestbook_name': guestbook_name}))
 
+'''
+class CreateForm(webapp2.RequestHandler):
+    def post(self):
+        guestbook = Guestbook(name=self.request.get('name'))
+        guestbook.put()
+'''
 
 app = webapp2.WSGIApplication([
     ('/', MainPage),
-    ('/sign', SubmitForm)
+#    ('/list', GuestbookListPage),
+    ('/sign', SubmitForm),
+#    ('/create', CreateForm)
 ])
-# [END all]
