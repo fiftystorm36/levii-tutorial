@@ -133,7 +133,7 @@ class CreateForm(webapp2.RequestHandler):
         guestbook_name = self.request.get('guestbook_name')
         guestbook = Guestbook(name=guestbook_name)
         guestbook.put()
-        self.redirect('/list')
+        self.redirect('/')
 
 app = webapp2.WSGIApplication([
     ('/book', GuestbookPage),
