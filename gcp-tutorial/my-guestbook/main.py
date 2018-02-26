@@ -64,6 +64,9 @@ class MainPage(webapp2.RequestHandler):
         self.response.out.write(textwrap.dedent("""\
             <html>
               <body>
+                <h1>
+                  {guestbook_name}
+                </h1>
                 {blockquotes}
                 <form action="/sign?{sign}" method="post">
                   <div>
@@ -75,11 +78,7 @@ class MainPage(webapp2.RequestHandler):
                   </div>
                 </form>
                 <hr>
-                <form>
-                  Guestbook name:
-                    <input value="{guestbook_name}" name="guestbook_name">
-                    <input type="submit" value="switch">
-                </form>
+                <input type="button" value="back to list" onClick="location.href='/list'">
               </body>
             </html>""").format(
             blockquotes='\n'.join(greeting_blockquotes),
