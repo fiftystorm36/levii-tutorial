@@ -49,7 +49,7 @@ class Guestbook(ndb.Model):
         return cls.query().order(cls.name)
 
 
-class MainPage(webapp2.RequestHandler):
+class GuestbookPage(webapp2.RequestHandler):
     def get(self):
         self.response.out.write('<html><body>')
         guestbook_name = self.request.get('guestbook_name')
@@ -86,14 +86,12 @@ class MainPage(webapp2.RequestHandler):
 class ListPage(webapp2.RequestHandler):
     def get(self):
         self.response.out.write('<html><body>')
-        guestbook_name = self.request.get('guestbook_name')
-        ancestor_key = ndb.Key("Book", guestbook_name or "*notitle*")
-        greetings = Greeting.query_book(ancestor_key).fetch(20)
+        guestbooks = Guestbook.query_book()
 
-        greeting_blockquotes = []
-        for greeting in greetings:
-            greeting_blockquotes.append(
-                '<blockquote>%s</blockquote>' % cgi.escape(greeting.content))
+        guestbook_blockquotes = []
+        for guestbook in guestbooks:
+            guestbook_blockquotes.append(
+                '<blockquote>%s</blockquote>' % cgi.escape(guestbook.name))
 
         self.response.out.write(textwrap.dedent("""\
             <html>
@@ -102,7 +100,7 @@ class ListPage(webapp2.RequestHandler):
                 {blockquotes}
                 <form action="/create" method="post">
                   <div>
-                    <textarea name="content" rows="1" cols="60">
+                    <textarea name="guestbook_name" rows="1" cols="60">
                     </textarea>
                   </div>
                   <div>
@@ -111,9 +109,9 @@ class ListPage(webapp2.RequestHandler):
                 </form>
               </body>
             </html>""").format(
-            blockquotes='\n'.join(greeting_blockquotes),
-            create=urllib.urlencode({'guestbook_name': guestbook_name}),
-            guestbook_name=cgi.escape(guestbook_name)))
+            blockquotes='\n'.join(guestbook_blockquotes)))
+            #create=urllib.urlencode({'guestbook_name': guestbook_name}),
+            #guestbook_name=cgi.escape(guestbook_name)))
 
 
 class SubmitForm(webapp2.RequestHandler):
@@ -138,8 +136,8 @@ class CreateForm(webapp2.RequestHandler):
         self.redirect('/list')
 
 app = webapp2.WSGIApplication([
-    ('/', MainPage),
-    ('/list', ListPage),
+    ('/book', GuestbookPage),
+    ('/', ListPage),
     ('/sign', SubmitForm),
     ('/create', CreateForm)
 ])
