@@ -20,7 +20,6 @@ This sample is used on this page:
 For more information, see README.md
 """
 
-# [START all]
 import cgi
 import textwrap
 import urllib
@@ -57,6 +56,7 @@ class GuestbookPage(webapp2.RequestHandler):
         ancestor_key = guestbook.key
         greetings = Greeting.query_book(ancestor_key).fetch(20)
 
+        # create {blockquote}
         greeting_blockquotes = []
         for greeting in greetings:
             greeting_blockquotes.append(
@@ -64,56 +64,59 @@ class GuestbookPage(webapp2.RequestHandler):
 
         self.response.out.write(textwrap.dedent("""
             <html>
-              <body>
-                <h1>{guestbook_name}</h1>
-                {blockquotes}
-                <form action="/sign?%s" method="post">
-                  <div>
-                    <textarea name="content" rows="3" cols="60">
-                    </textarea>
-                  </div>
-                  <div>
-                    <input type="submit" value="Sign Guestbook">
-                  </div>
-                </form>
-                <hr>
-                <input type="button" value="back to list" onClick="location.href='/'">
-              </body>
+                <body>
+                    <h1>{guestbook_name}</h1>
+                    {blockquotes}
+                    <form action="/sign?%s" method="post">
+                        <div>
+                            <textarea name="content" rows="5" cols="60"></textarea>
+                        </div>
+                        <div>
+                            <input type="submit" value="Sign Guestbook">
+                        </div>
+                    </form>
+                    <hr>
+                    <input type="button" value="back to list" onClick="location.href='/'">
+                </body>
             </html>""" % urllib.urlencode({'guestbook_id': guestbook_id})).format(
-            guestbook_name=cgi.escape(guestbook_name),
+            guestbook_name=cgi.escape(guestbook.name),
             blockquotes='\n'.join(greeting_blockquotes),
             sign=urllib.urlencode({'guestbook_name': guestbook_name})
-            ))
+        ))
 
 
 class ListPage(webapp2.RequestHandler):
     def get(self):
         guestbooks = Guestbook.query_book()
 
+        # create {tablecontent}
         guestbook_links = []
         for guestbook in guestbooks:
-            guestbook_links.append(
-                '- <a href="/books/%s">%s</a>' % (guestbook.key.id(), cgi.escape(guestbook.name))
-            )
+            ancestor_key = guestbook.key
+            greetings = Greeting.query_book(ancestor_key).fetch(20)
+            guestbook_links.append('''
+                <tr>
+                    <td><a href="/books/%s">%s</a></td>
+                    <td>(%s)</td>
+                </tr>''' % (guestbook.key.id(), cgi.escape(guestbook.name), len(greetings))
+                                   )
 
         self.response.out.write(textwrap.dedent("""
             <html>
-              <body>
-              <h1>Guestbook List</h1>
-                {links}
-                <form action="/create" method="post">
-                  <div>
-                    <textarea name="guestbook_name" rows="1" cols="60">
-                    </textarea>
-                  </div>
-                  <div>
-                    <input type="submit" value="Create New Guestbook">
-                  </div>
-              </body>
+                <body>
+                    <h1>Guestbook List</h1>
+                    <table>
+                        {tablecontent}
+                    </table>
+                    <form action="/create" method="post">
+                        <div>
+                            <input type="text" name="guestbook_name" size="40" maxlength="20">
+                            <input type="submit" value="Create New Guestbook">
+                        </div>
+                    </form>
+                </body>
             </html>""").format(
-            links='<br>'.join(guestbook_links)))
-        # create=urllib.urlencode({'guestbook_name': guestbook_name}),
-        # guestbook_name=cgi.escape(guestbook_name)))
+            tablecontent='\n'.join(guestbook_links)))
 
 
 class SubmitForm(webapp2.RequestHandler):
@@ -131,22 +134,13 @@ class CreateForm(webapp2.RequestHandler):
         guestbook_name = self.request.get('guestbook_name')
         guestbook = Guestbook(name=guestbook_name)
         guestbook.put()
-        time.sleep(0.5)  # wait for put() are finished
+        time.sleep(0.5)  # wait for put() have finished
         self.redirect('/')
 
 
 app = webapp2.WSGIApplication([
-    (r'/books/(\d+)', GuestbookPage),
-    (r'/', ListPage),
-    (r'/sign', SubmitForm),
-    (r'/create', CreateForm)
-])
-
-'''
-app = webapp2.WSGIApplication([
-    webapp2.Route(r'/books/<guestbook_id:\d+>', handler=GuestbookPage, name='books'),
+    webapp2.Route(r'/books/<guestbook_id:\d+>', handler=GuestbookPage, name='book'),
     webapp2.Route(r'/', handler=ListPage, name='book-list'),
     webapp2.Route(r'/sign', handler=SubmitForm, name='sign'),
     webapp2.Route(r'/create', handler=CreateForm, name='create')
 ])
-'''
