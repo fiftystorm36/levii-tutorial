@@ -61,7 +61,7 @@ class GuestbookPage(webapp2.RequestHandler):
         guestbook = Guestbook.get_by_id(long(guestbook_id))
         guestbook_name = self.request.get('guestbook_name')
         ancestor_key = guestbook.key
-        greetings = Greeting.query_book(ancestor_key).fetch(20)
+        greetings = Greeting.query_greeting(ancestor_key).fetch(20)
 
         # create {blockquote}
         greeting_blockquotes = []
@@ -106,7 +106,7 @@ class ListPage(webapp2.RequestHandler):
         guestbook_links = []
         for guestbook in guestbooks:
             ancestor_key = guestbook.key
-            greetings = Greeting.query_book(ancestor_key).fetch(20)
+            greetings = Greeting.query_greeting(ancestor_key).fetch(20)
             guestbook_links.append('''
                 <tr>
                     <td><a href="/books/%s">%s</a></td>
