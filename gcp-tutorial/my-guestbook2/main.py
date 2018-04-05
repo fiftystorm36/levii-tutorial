@@ -35,7 +35,7 @@ class Greeting(ndb.Model):
     date = ndb.DateTimeProperty(auto_now_add=True)
 
     @classmethod
-    def query_book(cls, ancestor_key):
+    def query_greeting(cls, ancestor_key):
         return cls.query(ancestor=ancestor_key).order(-cls.date)
 
 class Tag(ndb.Model):
@@ -44,7 +44,7 @@ class Tag(ndb.Model):
 
     @classmethod
     def query_tag(cls):
-        return cls.query().order(-cls.date)
+        return cls.query().order(cls.name)
 
 class Guestbook(ndb.Model):
     """Models an entry with each guestbook's name"""
