@@ -66,6 +66,12 @@ class GuestbookPage(webapp2.RequestHandler):
             <html>
                 <body>
                     <h1>{guestbook_name}</h1>
+                    <form action="/rename?%s" method="post">
+                        <div>
+                            <input type="text" name="newguestbook_name" value="{guestbook_name}" size="40" maxlength="20">
+                            <input type="submit" value="Rename Guestbook">
+                        </div>
+                    </form>
                     {blockquotes}
                     <form action="/sign?%s" method="post">
                         <div>
@@ -78,7 +84,8 @@ class GuestbookPage(webapp2.RequestHandler):
                     <hr>
                     <input type="button" value="back to list" onClick="location.href='/'">
                 </body>
-            </html>""" % urllib.urlencode({'guestbook_id': guestbook_id})).format(
+            </html>""" % (
+        urllib.urlencode({'guestbook_id': guestbook_id}), urllib.urlencode({'guestbook_id': guestbook_id}))).format(
             guestbook_name=cgi.escape(guestbook.name),
             blockquotes='\n'.join(greeting_blockquotes),
             sign=urllib.urlencode({'guestbook_name': guestbook_name})
@@ -138,9 +145,21 @@ class CreateForm(webapp2.RequestHandler):
         self.redirect('/')
 
 
+class RenameForm(webapp2.RequestHandler):
+    def post(self):
+        guestbook_id = self.request.get('guestbook_id')
+        newguestbook_name = self.request.get('newguestbook_name')
+        guestbook = Guestbook.get_by_id(long(guestbook_id))
+        guestbook.name = newguestbook_name
+        guestbook.put()
+        time.sleep(0.5)  # wait for put() have finished
+        self.redirect('/books/' + str(guestbook_id))
+
+
 app = webapp2.WSGIApplication([
     webapp2.Route(r'/books/<guestbook_id:\d+>', handler=GuestbookPage, name='book'),
     webapp2.Route(r'/', handler=ListPage, name='book-list'),
     webapp2.Route(r'/sign', handler=SubmitForm, name='sign'),
-    webapp2.Route(r'/create', handler=CreateForm, name='create')
+    webapp2.Route(r'/create', handler=CreateForm, name='create'),
+    webapp2.Route(r'/rename', handler=RenameForm, name='rename')
 ])
