@@ -1,10 +1,10 @@
 2 で作った Guestbook を別のディレクトリにコピーして、以下の要求を満たすように変更して push して下さい。(チューターに連絡して確認してもらうこと)
 
 TODO
-- [ ] /books/{id} で Book の更新をできるようにする
+- [x] /books/{id} で Book の更新をできるようにする
   - 具体的には name を変更できるようにして下さい
 - [ ] Book の追加や更新時に Tag を追加できるようにする
-  - [ ] Book に tag という KeyProperty を追加する
+  - [x] Book に tag という KeyProperty を追加する
   - [ ] tag はいくつでも追加できる
 - [ ] Book を表示する場合は Tag も一緒に表示する
 - Tag の詳細
