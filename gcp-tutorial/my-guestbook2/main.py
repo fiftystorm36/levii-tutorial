@@ -29,16 +29,25 @@ from google.appengine.ext import ndb
 
 import webapp2
 
+'''
+class Tag(ndb.Model):
+    """Models an individual Guestbook ently with name"""
+    text = ndb.StringProperty()
+
+    @classmethod
+    def query_tag(cls):
+        return cls.query().order(-cls.date)'''
+
 
 class Greeting(ndb.Model):
     """Models an individual Guestbook entry with content and date."""
     content = ndb.StringProperty()
     date = ndb.DateTimeProperty(auto_now_add=True)
+    #tag = ndb.KeyProperty(kind=Tag, required=True)
 
     @classmethod
     def query_book(cls, ancestor_key):
         return cls.query(ancestor=ancestor_key).order(-cls.date)
-
 
 class Guestbook(ndb.Model):
     """Models an entry with each guestbook's name"""
@@ -87,8 +96,7 @@ class GuestbookPage(webapp2.RequestHandler):
             </html>""" % (
         urllib.urlencode({'guestbook_id': guestbook_id}), urllib.urlencode({'guestbook_id': guestbook_id}))).format(
             guestbook_name=cgi.escape(guestbook.name),
-            blockquotes='\n'.join(greeting_blockquotes),
-            sign=urllib.urlencode({'guestbook_name': guestbook_name})
+            blockquotes='\n'.join(greeting_blockquotes)
         ))
 
 
@@ -141,7 +149,7 @@ class CreateForm(webapp2.RequestHandler):
         guestbook_name = self.request.get('guestbook_name')
         guestbook = Guestbook(name=guestbook_name)
         guestbook.put()
-        time.sleep(0.5)  # wait for put() have finished
+        time.sleep(0.1)  # wait for put() have finished
         self.redirect('/')
 
 
@@ -152,7 +160,6 @@ class RenameForm(webapp2.RequestHandler):
         guestbook = Guestbook.get_by_id(long(guestbook_id))
         guestbook.name = newguestbook_name
         guestbook.put()
-        time.sleep(0.5)  # wait for put() have finished
         self.redirect('/books/' + str(guestbook_id))
 
 
