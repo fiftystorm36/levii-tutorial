@@ -29,29 +29,27 @@ from google.appengine.ext import ndb
 
 import webapp2
 
-'''
+class Greeting(ndb.Model):
+    """Models an individual Guestbook entry with content and date."""
+    content = ndb.StringProperty()
+    date = ndb.DateTimeProperty(auto_now_add=True)
+
+    @classmethod
+    def query_book(cls, ancestor_key):
+        return cls.query(ancestor=ancestor_key).order(-cls.date)
+
 class Tag(ndb.Model):
     """Models an individual Guestbook ently with name"""
     text = ndb.StringProperty()
 
     @classmethod
     def query_tag(cls):
-        return cls.query().order(-cls.date)'''
-
-
-class Greeting(ndb.Model):
-    """Models an individual Guestbook entry with content and date."""
-    content = ndb.StringProperty()
-    date = ndb.DateTimeProperty(auto_now_add=True)
-    #tag = ndb.KeyProperty(kind=Tag, required=True)
-
-    @classmethod
-    def query_book(cls, ancestor_key):
-        return cls.query(ancestor=ancestor_key).order(-cls.date)
+        return cls.query().order(-cls.date)
 
 class Guestbook(ndb.Model):
     """Models an entry with each guestbook's name"""
     name = ndb.StringProperty()
+    tag = ndb.KeyProperty(kind=Tag, required=True)
 
     @classmethod
     def query_book(cls):
