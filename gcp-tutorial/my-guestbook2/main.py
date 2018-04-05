@@ -160,11 +160,19 @@ class RenameForm(webapp2.RequestHandler):
         guestbook.put()
         self.redirect('/books/' + str(guestbook_id))
 
+class AddtagForm(webapp2.RequestHandler):
+    def post(self):
+        type = self.request.get('type')
+        tag = Tag(type=type)
+        tag.put()
+        self.redirect('/')
+
 
 app = webapp2.WSGIApplication([
     webapp2.Route(r'/books/<guestbook_id:\d+>', handler=GuestbookPage, name='book'),
     webapp2.Route(r'/', handler=ListPage, name='book-list'),
     webapp2.Route(r'/sign', handler=SubmitForm, name='sign'),
     webapp2.Route(r'/create', handler=CreateForm, name='create'),
-    webapp2.Route(r'/rename', handler=RenameForm, name='rename')
+    webapp2.Route(r'/rename', handler=RenameForm, name='rename'),
+    webapp2.Route(r'/addtag', handler=AddtagForm, name='addtag')
 ])
