@@ -163,8 +163,11 @@ class RenameForm(webapp2.RequestHandler):
 class AddtagForm(webapp2.RequestHandler):
     def post(self):
         type = self.request.get('type')
-        tag = Tag(type=type)
-        tag.put()
+        if Tag.query(Tag.type == type).get() == None:
+            pass
+        else:
+            tag = Tag(type=type)
+            tag.put()
         self.redirect('/')
 
 
