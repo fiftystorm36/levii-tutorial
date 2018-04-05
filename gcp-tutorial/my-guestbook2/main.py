@@ -40,7 +40,7 @@ class Greeting(ndb.Model):
 
 class Tag(ndb.Model):
     """Models an individual Guestbook ently with name"""
-    text = ndb.StringProperty()
+    type = ndb.StringProperty()
 
     @classmethod
     def query_tag(cls):
