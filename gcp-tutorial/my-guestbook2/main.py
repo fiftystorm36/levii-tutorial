@@ -83,7 +83,6 @@ class GuestbookPage(webapp2.RequestHandler):
                             <input type="submit" value="Rename Guestbook">
                         </div>
                     </form>
-                    {blockquotes}
                     <form action="/sign?%s" method="post">
                         <div>
                             <textarea name="content" rows="5" cols="60"></textarea>
@@ -92,6 +91,7 @@ class GuestbookPage(webapp2.RequestHandler):
                             <input type="submit" value="Sign Guestbook">
                         </div>
                     </form>
+                    {blockquotes}
                     <hr>
                     <input type="button" value="back to list" onClick="location.href='/'">
                 </body>
