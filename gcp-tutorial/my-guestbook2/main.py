@@ -29,6 +29,7 @@ from google.appengine.ext import ndb
 
 import webapp2
 
+
 class Greeting(ndb.Model):
     """Models an individual Guestbook entry with content and date."""
     content = ndb.StringProperty()
@@ -38,18 +39,21 @@ class Greeting(ndb.Model):
     def query_greeting(cls, ancestor_key):
         return cls.query(ancestor=ancestor_key).order(-cls.date)
 
+
 class Tag(ndb.Model):
     """Models an individual Guestbook ently with name"""
     type = ndb.StringProperty()
 
     @classmethod
     def query_tag(cls):
-        return cls.query().order(cls.name)
+        return cls.query().order(cls.type)
+
 
 class Guestbook(ndb.Model):
     """Models an entry with each guestbook's name"""
     name = ndb.StringProperty()
-    tag = ndb.KeyProperty(kind=Tag, required=True)
+
+    # tag = ndb.KeyProperty(kind=Tag, required=True)
 
     @classmethod
     def query_book(cls):
@@ -92,7 +96,7 @@ class GuestbookPage(webapp2.RequestHandler):
                     <input type="button" value="back to list" onClick="location.href='/'">
                 </body>
             </html>""" % (
-        urllib.urlencode({'guestbook_id': guestbook_id}), urllib.urlencode({'guestbook_id': guestbook_id}))).format(
+            urllib.urlencode({'guestbook_id': guestbook_id}), urllib.urlencode({'guestbook_id': guestbook_id}))).format(
             guestbook_name=cgi.escape(guestbook.name),
             blockquotes='\n'.join(greeting_blockquotes)
         ))
@@ -145,8 +149,29 @@ class SubmitForm(webapp2.RequestHandler):
 class CreateForm(webapp2.RequestHandler):
     def post(self):
         guestbook_name = self.request.get('guestbook_name')
-        guestbook = Guestbook(name=guestbook_name)
-        guestbook.put()
+        guestbooks = Guestbook.query_book()
+
+        # get list of every guestbook's name
+        guestbooknames = []
+        for guestbook in guestbooks:
+            guestbooknames.append(guestbook.name)
+
+        if guestbook_name == '':
+            guestbook_name = 'New Guestbook'
+
+        if guestbook_name in guestbooknames:
+            # when the name has been used, add number to the name like [name(N)]
+            number = 2
+            guestbook_name_n = guestbook_name + ('(%d)' % number)
+            while guestbook_name_n in guestbooknames:
+                number += 1
+                guestbook_name_n = guestbook_name + ('(%d)' % number)
+            guestbook = Guestbook(name=guestbook_name_n)
+            guestbook.put()
+
+        else:
+            guestbook = Guestbook(name=guestbook_name)
+            guestbook.put()
         time.sleep(0.1)  # wait for put() have finished
         self.redirect('/')
 
@@ -159,6 +184,7 @@ class RenameForm(webapp2.RequestHandler):
         guestbook.name = newguestbook_name
         guestbook.put()
         self.redirect('/books/' + str(guestbook_id))
+
 
 class AddtagForm(webapp2.RequestHandler):
     def post(self):
