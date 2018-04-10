@@ -70,7 +70,8 @@ class GuestbookPage(webapp2.RequestHandler):
         for greeting in greetings:
             print(greeting.date)
             greeting_blockquotes.append(
-                '%s<blockquote>%s</blockquote>' % (cgi.escape(greeting.date.strftime("%Y/%m/%d %H:%M:%S")), cgi.escape(greeting.content)))
+                '%s<blockquote>%s</blockquote>' % (cgi.escape(greeting.date.strftime("%Y/%m/%d %H:%M:%S")),
+                                                   cgi.escape(greeting.content)))
 
         self.response.out.write(textwrap.dedent("""
             <html>
@@ -113,8 +114,7 @@ class ListPage(webapp2.RequestHandler):
                 <tr>
                     <td><a href="/books/%s">%s</a></td>
                     <td>(%s)</td>
-                </tr>''' % (guestbook.key.id(), cgi.escape(guestbook.name), len(greetings))
-                                   )
+                </tr>''' % (guestbook.key.id(), cgi.escape(guestbook.name), str(greetings.count())))
 
         # create {tags}
         tags = Tag.query_tag()
