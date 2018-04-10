@@ -63,13 +63,14 @@ class GuestbookPage(webapp2.RequestHandler):
     def get(self, guestbook_id):
         guestbook = Guestbook.get_by_id(long(guestbook_id))
         ancestor_key = guestbook.key
-        greetings = Greeting.query_greeting(ancestor_key).fetch(20)
+        greetings = Greeting.query_greeting(ancestor_key)
 
         # create {blockquote}
         greeting_blockquotes = []
         for greeting in greetings:
+            print(greeting.date)
             greeting_blockquotes.append(
-                '<blockquote>%s</blockquote>' % cgi.escape(greeting.content))
+                '%s<blockquote>%s</blockquote>' % (cgi.escape(greeting.date.strftime("%Y/%m/%d %H:%M:%S")), cgi.escape(greeting.content)))
 
         self.response.out.write(textwrap.dedent("""
             <html>
@@ -107,7 +108,7 @@ class ListPage(webapp2.RequestHandler):
         guestbook_links = []
         for guestbook in guestbooks:
             ancestor_key = guestbook.key
-            greetings = Greeting.query_greeting(ancestor_key).fetch(20)
+            greetings = Greeting.query_greeting(ancestor_key)
             guestbook_links.append('''
                 <tr>
                     <td><a href="/books/%s">%s</a></td>
