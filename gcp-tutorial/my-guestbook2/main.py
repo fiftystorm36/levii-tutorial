@@ -63,7 +63,7 @@ class Guestbook(ndb.Model):
 class GuestbookPage(webapp2.RequestHandler):
     def get(self, guestbook_id):
         guestbook = Guestbook.get_by_id(long(guestbook_id))
-        guestbook_name = self.request.get('guestbook_name')
+        #guestbook_name = self.request.get('guestbook_name')
         ancestor_key = guestbook.key
         greetings = Greeting.query_greeting(ancestor_key).fetch(20)
 
@@ -116,7 +116,7 @@ class ListPage(webapp2.RequestHandler):
                     <td><a href="/books/%s">%s</a></td>
                     <td>(%s)</td>
                 </tr>''' % (guestbook.key.id(), cgi.escape(guestbook.name), len(greetings))
-                                   )
+            )
 
         self.response.out.write(textwrap.dedent("""
             <html>
@@ -162,6 +162,7 @@ class CreateForm(webapp2.RequestHandler):
         if guestbook_name in guestbooknames:
             # when the name has been used, add number to the name like [name N]
             number = 1
+            guestbook_name_n = guestbook_name
             while guestbook_name_n in guestbooknames:
                 number += 1
                 guestbook_name_n = guestbook_name + (' %d' % number)
@@ -169,7 +170,7 @@ class CreateForm(webapp2.RequestHandler):
 
         guestbook = Guestbook(name=guestbook_name)
         guestbook.put()
-        
+
         time.sleep(0.1)  # wait for put() have finished
         self.redirect('/')
 
@@ -187,7 +188,7 @@ class RenameForm(webapp2.RequestHandler):
 class AddtagForm(webapp2.RequestHandler):
     def post(self):
         type = self.request.get('type')
-        if Tag.query(Tag.type == type).get() == None:
+        if not Tag.query(Tag.type == type).get():
             pass
         else:
             tag = Tag(type=type)
