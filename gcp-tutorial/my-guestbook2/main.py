@@ -160,18 +160,16 @@ class CreateForm(webapp2.RequestHandler):
             guestbook_name = 'New Guestbook'
 
         if guestbook_name in guestbooknames:
-            # when the name has been used, add number to the name like [name(N)]
-            number = 2
-            guestbook_name_n = guestbook_name + ('(%d)' % number)
+            # when the name has been used, add number to the name like [name N]
+            number = 1
             while guestbook_name_n in guestbooknames:
                 number += 1
-                guestbook_name_n = guestbook_name + ('(%d)' % number)
-            guestbook = Guestbook(name=guestbook_name_n)
-            guestbook.put()
+                guestbook_name_n = guestbook_name + (' %d' % number)
+            guestbook_name = guestbook_name_n
 
-        else:
-            guestbook = Guestbook(name=guestbook_name)
-            guestbook.put()
+        guestbook = Guestbook(name=guestbook_name)
+        guestbook.put()
+        
         time.sleep(0.1)  # wait for put() have finished
         self.redirect('/')
 
