@@ -120,16 +120,12 @@ class ListPage(webapp2.RequestHandler):
         tags = Tag.query_tag()
         tag_links = []
         for tag in tags:
-            tag_links.append('''
-                <tr>
-                    <td>%s</td>
-                </tr>''' % cgi.escape(tag.type))
+            tag_links.append('[ ] %s' % cgi.escape(tag.type))
 
         self.response.out.write(textwrap.dedent("""
             <html>
                 <body>
                     <h1>Guestbook List</h1>
-                    <h2>books</h2>
                     <table>{books}</table>
                     <form action="/createbook" method="post">
                         <div>
@@ -137,8 +133,7 @@ class ListPage(webapp2.RequestHandler):
                             <input type="submit" value="Create New Guestbook">
                         </div>
                     </form>
-                    <h2>tags</h2><table>{tags}
-                    </table>
+                    tag: {tags}
                     <form action="/createtag" method="post">
                         <div>
                             <input type="text" name="tag_type" size="40" maxlength="20">
@@ -148,7 +143,7 @@ class ListPage(webapp2.RequestHandler):
                 </body>
             </html>""").format(
             books='\n'.join(guestbook_links),
-            tags='\n'.join(tag_links)))
+            tags='\t'.join(tag_links)))
 
 
 class SubmitForm(webapp2.RequestHandler):
