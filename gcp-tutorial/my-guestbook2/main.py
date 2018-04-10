@@ -52,8 +52,7 @@ class Tag(ndb.Model):
 class Guestbook(ndb.Model):
     """Models an entry with each guestbook's name"""
     name = ndb.StringProperty()
-
-    # tag = ndb.KeyProperty(kind=Tag, required=True)
+    tag = ndb.KeyProperty(kind=Tag, repeated=True)
 
     @classmethod
     def query_book(cls):
@@ -63,7 +62,6 @@ class Guestbook(ndb.Model):
 class GuestbookPage(webapp2.RequestHandler):
     def get(self, guestbook_id):
         guestbook = Guestbook.get_by_id(long(guestbook_id))
-        #guestbook_name = self.request.get('guestbook_name')
         ancestor_key = guestbook.key
         greetings = Greeting.query_greeting(ancestor_key).fetch(20)
 
@@ -77,7 +75,7 @@ class GuestbookPage(webapp2.RequestHandler):
             <html>
                 <body>
                     <h1>{guestbook_name}</h1>
-                    <form action="/rename?%s" method="post">
+                    <form action="/renamebook?%s" method="post">
                         <div>
                             <input type="text" name="newguestbook_name" value="{guestbook_name}" size="40" maxlength="20">
                             <input type="submit" value="Rename Guestbook">
@@ -104,9 +102,8 @@ class GuestbookPage(webapp2.RequestHandler):
 
 class ListPage(webapp2.RequestHandler):
     def get(self):
+        # create {books}
         guestbooks = Guestbook.query_book()
-
-        # create {tablecontent}
         guestbook_links = []
         for guestbook in guestbooks:
             ancestor_key = guestbook.key
@@ -116,24 +113,41 @@ class ListPage(webapp2.RequestHandler):
                     <td><a href="/books/%s">%s</a></td>
                     <td>(%s)</td>
                 </tr>''' % (guestbook.key.id(), cgi.escape(guestbook.name), len(greetings))
-            )
+                                   )
+
+        # create {tags}
+        tags = Tag.query_tag()
+        tag_links = []
+        for tag in tags:
+            tag_links.append('''
+                <tr>
+                    <td>%s</td>
+                </tr>''' % cgi.escape(tag.type))
 
         self.response.out.write(textwrap.dedent("""
             <html>
                 <body>
                     <h1>Guestbook List</h1>
-                    <table>
-                        {tablecontent}
-                    </table>
-                    <form action="/create" method="post">
+                    <h2>books</h2>
+                    <table>{books}</table>
+                    <form action="/createbook" method="post">
                         <div>
                             <input type="text" name="guestbook_name" size="40" maxlength="20">
                             <input type="submit" value="Create New Guestbook">
                         </div>
                     </form>
+                    <h2>tags</h2><table>{tags}
+                    </table>
+                    <form action="/createtag" method="post">
+                        <div>
+                            <input type="text" name="tag_type" size="40" maxlength="20">
+                            <input type="submit" value="Create New Tag">
+                        </div>
+                    </form>
                 </body>
             </html>""").format(
-            tablecontent='\n'.join(guestbook_links)))
+            books='\n'.join(guestbook_links),
+            tags='\n'.join(tag_links)))
 
 
 class SubmitForm(webapp2.RequestHandler):
@@ -146,7 +160,7 @@ class SubmitForm(webapp2.RequestHandler):
         self.redirect('/books/' + str(guestbook_id))
 
 
-class CreateForm(webapp2.RequestHandler):
+class CreatebookForm(webapp2.RequestHandler):
     def post(self):
         guestbook_name = self.request.get('guestbook_name')
         guestbooks = Guestbook.query_book()
@@ -175,7 +189,7 @@ class CreateForm(webapp2.RequestHandler):
         self.redirect('/')
 
 
-class RenameForm(webapp2.RequestHandler):
+class RenamebookForm(webapp2.RequestHandler):
     def post(self):
         guestbook_id = self.request.get('guestbook_id')
         newguestbook_name = self.request.get('newguestbook_name')
@@ -185,14 +199,15 @@ class RenameForm(webapp2.RequestHandler):
         self.redirect('/books/' + str(guestbook_id))
 
 
-class AddtagForm(webapp2.RequestHandler):
+class CreatetagForm(webapp2.RequestHandler):
     def post(self):
-        type = self.request.get('type')
-        if not Tag.query(Tag.type == type).get():
+        type = self.request.get('tag_type')
+        if Tag.query(Tag.type == type).get() or type == '':
             pass
         else:
             tag = Tag(type=type)
             tag.put()
+            time.sleep(0.1) # wait for put() have finished
         self.redirect('/')
 
 
@@ -200,7 +215,7 @@ app = webapp2.WSGIApplication([
     webapp2.Route(r'/books/<guestbook_id:\d+>', handler=GuestbookPage, name='book'),
     webapp2.Route(r'/', handler=ListPage, name='book-list'),
     webapp2.Route(r'/sign', handler=SubmitForm, name='sign'),
-    webapp2.Route(r'/create', handler=CreateForm, name='create'),
-    webapp2.Route(r'/rename', handler=RenameForm, name='rename'),
-    webapp2.Route(r'/addtag', handler=AddtagForm, name='addtag')
+    webapp2.Route(r'/createbook', handler=CreatebookForm, name='createbook'),
+    webapp2.Route(r'/renamebook', handler=RenamebookForm, name='renamebook'),
+    webapp2.Route(r'/createtag', handler=CreatetagForm, name='createtag')
 ])
