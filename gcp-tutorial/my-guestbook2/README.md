@@ -6,7 +6,7 @@ TODO
 - [ ] Book の追加や更新時に Tag を追加できるようにする
   - [x] Book に tag という KeyProperty を追加する
   - [ ] tag はいくつでも追加できる
-- [ ] Book を表示する場合は Tag も一緒に表示する
+- [x] Book を表示する場合は Tag も一緒に表示する
 - Tag の詳細
   - type という Property(どの種類のプロパティにするべきかも考えて選択する)を持つ
   - 同じ type の Tag が既に存在しているならそれを使いまわす(同一 type の Tag は1つだけしか存在しない)
