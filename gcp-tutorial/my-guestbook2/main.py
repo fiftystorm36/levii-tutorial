@@ -84,7 +84,7 @@ class GuestbookPage(webapp2.RequestHandler):
                             <textarea name="content" rows="5" cols="60"></textarea>
                         </div>
                         <div>
-                            <input type="submixt" value="Sign Guestbook">
+                            <input type="submit" value="Sign Guestbook">
                         </div>
                     </form>
                     {greeting_blockquotes}
