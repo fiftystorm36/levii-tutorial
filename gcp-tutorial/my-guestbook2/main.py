@@ -62,16 +62,9 @@ class Guestbook(ndb.Model):
 class GuestbookPage(webapp2.RequestHandler):
     def get(self, guestbook_id):
         guestbook = Guestbook.get_by_id(long(guestbook_id))
-        ancestor_key = guestbook.key
-        greetings = Greeting.query_greeting(ancestor_key)
 
-        # create {blockquote}
-        greeting_blockquotes = []
-        for greeting in greetings:
-            print(greeting.date)
-            greeting_blockquotes.append(
-                '%s<blockquote>%s</blockquote>' % (cgi.escape(greeting.date.strftime("%Y/%m/%d %H:%M:%S")),
-                                                   cgi.escape(greeting.content)))
+        greeting_blockquotes = self.__createGreetingBlockquote(guestbook)
+        tag_blockquotes = self.__createTagBlockquote(guestbook)
 
         self.response.out.write(textwrap.dedent("""
             <html>
@@ -83,23 +76,46 @@ class GuestbookPage(webapp2.RequestHandler):
                             <input type="submit" value="Rename Guestbook">
                         </div>
                     </form>
+                    <div>
+                        <b>tag:</b>{tag_blockquotes}
+                    </div>
                     <form action="/sign?%s" method="post">
                         <div>
                             <textarea name="content" rows="5" cols="60"></textarea>
                         </div>
                         <div>
-                            <input type="submit" value="Sign Guestbook">
+                            <input type="submixt" value="Sign Guestbook">
                         </div>
                     </form>
-                    {blockquotes}
+                    {greeting_blockquotes}
                     <hr>
                     <input type="button" value="back to list" onClick="location.href='/'">
                 </body>
             </html>""" % (
             urllib.urlencode({'guestbook_id': guestbook_id}), urllib.urlencode({'guestbook_id': guestbook_id}))).format(
             guestbook_name=cgi.escape(guestbook.name),
-            blockquotes='\n'.join(greeting_blockquotes)
+            greeting_blockquotes='\n'.join(greeting_blockquotes),
+            tag_blockquotes='\t'.join(tag_blockquotes)
         ))
+
+    def __createGreetingBlockquote(self, guestbook):
+        ancestor_key = guestbook.key
+        greetings = Greeting.query_greeting(ancestor_key)
+        greeting_blockquotes = []
+        for greeting in greetings:
+            greeting_blockquotes.append(
+                '%s<blockquote>%s</blockquote>' % (cgi.escape(greeting.date.strftime("%Y/%m/%d %H:%M:%S")),
+                                                   cgi.escape(greeting.content)))
+        return greeting_blockquotes
+
+    def __createTagBlockquote(self, guestbook):
+        tagkeys = guestbook.tag
+        tag_blockquotes = []
+        for key in tagkeys:
+            tag_blockquotes.append(
+                '%s' % cgi.escape(key.get().type)
+            )
+        return tag_blockquotes
 
 
 class ListPage(webapp2.RequestHandler):
@@ -120,7 +136,9 @@ class ListPage(webapp2.RequestHandler):
         tags = Tag.query_tag()
         tag_links = []
         for tag in tags:
-            tag_links.append('[ ] %s' % cgi.escape(tag.type))
+            tag_links.append('''
+            <input type="checkbox" name="%s" value=true>%s
+            ''' % (cgi.escape(tag.type), cgi.escape(tag.type)))
 
         self.response.out.write(textwrap.dedent("""
             <html>
@@ -129,11 +147,15 @@ class ListPage(webapp2.RequestHandler):
                     <table>{books}</table>
                     <form action="/createbook" method="post">
                         <div>
+                            <p>
                             <input type="text" name="guestbook_name" size="40" maxlength="20">
                             <input type="submit" value="Create New Guestbook">
+                            </p>
+                            <p>
+                            <b>tag:</b> {tags}
+                            </p>
                         </div>
                     </form>
-                    tag: {tags}
                     <form action="/createtag" method="post">
                         <div>
                             <input type="text" name="tag_type" size="40" maxlength="20">
@@ -158,31 +180,46 @@ class SubmitForm(webapp2.RequestHandler):
 
 class CreatebookForm(webapp2.RequestHandler):
     def post(self):
-        guestbook_name = self.request.get('guestbook_name')
-        guestbooks = Guestbook.query_book()
-
-        # get list of every guestbook's name
-        guestbooknames = []
-        for guestbook in guestbooks:
-            guestbooknames.append(guestbook.name)
-
-        if guestbook_name == '':
-            guestbook_name = 'New Guestbook'
-
-        if guestbook_name in guestbooknames:
-            # when the name has been used, add number to the name like [name N]
-            number = 1
-            guestbook_name_n = guestbook_name
-            while guestbook_name_n in guestbooknames:
-                number += 1
-                guestbook_name_n = guestbook_name + (' %d' % number)
-            guestbook_name = guestbook_name_n
+        guestbook_name_candidate = self.request.get('guestbook_name')
+        guestbook_name = self.__decideBookName(guestbook_name_candidate)
 
         guestbook = Guestbook(name=guestbook_name)
         guestbook.put()
 
+        self.__attachTagToBook(guestbook)
+
         time.sleep(0.1)  # wait for put() have finished
         self.redirect('/')
+
+    def __decideBookName(self, guestbook_name):
+        """create guestbook name from inputted text"""
+        guestbooks = Guestbook.query_book()
+
+        # get list of every guestbook's name
+        guestbookNames = []
+        for guestbook in guestbooks:
+            guestbookNames.append(guestbook.name)
+
+        if guestbook_name == '':
+            guestbook_name = 'New Guestbook'
+
+        if guestbook_name in guestbookNames:
+            # when the name has been used, add number to the name like [name N]
+            number = 1
+            guestbook_name_n = guestbook_name
+            while guestbook_name_n in guestbookNames:
+                number += 1
+                guestbook_name_n = guestbook_name + (' %d' % number)
+            guestbook_name = guestbook_name_n
+        return guestbook_name
+
+    def __attachTagToBook(self, guestbook):
+        """ attach selected tag to the guestbook"""
+        tags = Tag.query_tag()
+        for tag in tags:
+            if self.request.get(tag.type):
+                guestbook.tag.append(tag.key)
+        guestbook.put()
 
 
 class RenamebookForm(webapp2.RequestHandler):
@@ -203,7 +240,7 @@ class CreatetagForm(webapp2.RequestHandler):
         else:
             tag = Tag(type=type)
             tag.put()
-            time.sleep(0.1) # wait for put() have finished
+            time.sleep(0.1)  # wait for put() have finished
         self.redirect('/')
 
 
