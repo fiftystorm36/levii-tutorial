@@ -77,7 +77,7 @@ class GuestbookPage(webapp2.RequestHandler):
                         </div>
                     </form>
                     <div>
-                        <b>tag:</b>{tag_blockquotes}
+                        <b>tag: </b>{tag_blockquotes}
                     </div>
                     <form action="/sign?%s" method="post">
                         <div>
