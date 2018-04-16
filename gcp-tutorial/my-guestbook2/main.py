@@ -48,6 +48,10 @@ class Tag(ndb.Model):
     def query_tag(cls):
         return cls.query().order(cls.type)
 
+    @classmethod
+    def query_type(cls, type):
+        return cls.query(Tag.type == type).order(cls.type)
+
 
 class Guestbook(ndb.Model):
     """Models an entry with each guestbook's name"""
@@ -57,6 +61,10 @@ class Guestbook(ndb.Model):
     @classmethod
     def query_book(cls):
         return cls.query().order(cls.name)
+
+    @classmethod
+    def query_tagkey(cls, key):
+        return cls.query(Guestbook.tag == key).order(cls.name)
 
 
 class GuestbookPage(webapp2.RequestHandler):
@@ -162,38 +170,68 @@ class GuestbookPage(webapp2.RequestHandler):
 
 class ListPage(webapp2.RequestHandler):
     def get(self):
-        guestbook_links = self.__createBookLinks()
-        tag_links = self.__createTagLinks()
+        tag_type = self.request.get('tag')
+        if tag_type:
+            guestbook_links = self.__createBookLinksWithTag(tag_type)
+            self.response.out.write(textwrap.dedent("""
+                <html>
+                    <body>
+                        <h1>Guestbook List (Tag: %s)</h1>
+                        <table>{books}</table>
+                        
+                        <hr>
+                        <input type="button" value="back to list" onClick="location.href='/'">
+                    </body>
+                </html>""" % tag_type).format(
+                books='\n'.join(guestbook_links)))
+        else:
+            guestbook_links = self.__createBookLinks()
+            tag_links = self.__createTagLinks()
 
-        self.response.out.write(textwrap.dedent("""
-            <html>
-                <body>
-                    <h1>Guestbook List</h1>
-                    <table>{books}</table>
-                    <form action="/createbook" method="post">
-                        <div>
-                            <p>
-                            <input type="text" name="guestbook_name" size="40" maxlength="20">
-                            <input type="submit" value="Create New Guestbook">
-                            </p>
-                            <p>
-                            <b>tag:</b> {tags}
-                            </p>
-                        </div>
-                    </form>
-                    <form action="/createtag" method="post">
-                        <div>
-                            <input type="text" name="tag_type" size="40" maxlength="20">
-                            <input type="submit" value="Create New Tag">
-                        </div>
-                    </form>
-                </body>
-            </html>""").format(
-            books='\n'.join(guestbook_links),
-            tags='\t'.join(tag_links)))
+            self.response.out.write(textwrap.dedent("""
+                <html>
+                    <body>
+                        <h1>Guestbook List</h1>
+                        <table>{books}</table>
+                        <form action="/createbook" method="post">
+                            <div>
+                                <p>
+                                <input type="text" name="guestbook_name" size="40" maxlength="20">
+                                <input type="submit" value="Create New Guestbook">
+                                </p>
+                                <p>
+                                <b>tag:</b> {tags}
+                                </p>
+                            </div>
+                        </form>
+                        <form action="/createtag" method="post">
+                            <div>
+                                <input type="text" name="tag_type" size="40" maxlength="20">
+                                <input type="submit" value="Create New Tag">
+                            </div>
+                        </form>
+                    </body>
+                </html>""").format(
+                books='\n'.join(guestbook_links),
+                tags='\t'.join(tag_links)))
 
     def __createBookLinks(self):
         guestbooks = Guestbook.query_book()
+        guestbook_links = []
+        for guestbook in guestbooks:
+            ancestor_key = guestbook.key
+            greetings = Greeting.query_greeting(ancestor_key)
+            guestbook_links.append('''
+                <tr>
+                    <td><a href="/books/%s">%s</a></td>
+                    <td>(%s)</td>
+                </tr>''' % (guestbook.key.id(), cgi.escape(guestbook.name), str(greetings.count())))
+        return guestbook_links
+
+    def __createBookLinksWithTag(self, tag_type):
+        [tags] = Tag.query_type(type=tag_type)
+        key = tags.key
+        guestbooks = Guestbook.query_tagkey(key)
         guestbook_links = []
         for guestbook in guestbooks:
             ancestor_key = guestbook.key
@@ -210,8 +248,10 @@ class ListPage(webapp2.RequestHandler):
         tag_links = []
         for tag in tags:
             tag_links.append('''
-                <input type="checkbox" name="%s" value=true>%s
-                ''' % (cgi.escape(tag.type), cgi.escape(tag.type)))
+                <input type="checkbox" name="%s" value=true><a href="/?tag=%s">%s</a>
+                ''' % (cgi.escape(tag.type),
+                       cgi.escape(tag.type),
+                       cgi.escape(tag.type)))
         return tag_links
 
 
