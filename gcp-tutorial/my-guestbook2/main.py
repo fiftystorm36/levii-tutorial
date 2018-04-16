@@ -63,8 +63,9 @@ class GuestbookPage(webapp2.RequestHandler):
     def get(self, guestbook_id):
         guestbook = Guestbook.get_by_id(long(guestbook_id))
 
-        greeting_blockquotes = self.__createGreetingBlockquote(guestbook)
-        tag_blockquotes = self.__createTagBlockquote(guestbook)
+        greeting_blockquotes = self.__createGreetingBlockquotes(guestbook)
+        tag_connected_blockquotes = self.__createTagConnectedBlockquotes(guestbook)
+        tag_unconnected_blockquotes = self.__createTagUnonnectedBlockquotes(guestbook)
 
         self.response.out.write(textwrap.dedent("""
             <html>
@@ -76,9 +77,24 @@ class GuestbookPage(webapp2.RequestHandler):
                             <input type="submit" value="Rename Guestbook">
                         </div>
                     </form>
-                    <div>
-                        <b>tag: </b>{tag_blockquotes}
-                    </div>
+                    <hr>
+                    
+                    <h2>Tag</h2>
+                    <div>{tag_connected_blockquotes}</div>
+                    <form action="/attachtag?%s" method="post">
+                        <div>
+                            {tag_unconnected_blockquotes}
+                            <input type="submit" value="Add selected tag to this book">
+                        </div>
+                    </form>
+                    <form action="/createtag" method="post">
+                        <div>
+                            <input type="text" name="tag_type" size="40" maxlength="20">
+                            <input type="submit" value="Create New Tag">
+                        </div>
+                    </form>
+                    
+                    <h2>Sign</h2>
                     <form action="/sign?%s" method="post">
                         <div>
                             <textarea name="content" rows="5" cols="60"></textarea>
@@ -89,16 +105,21 @@ class GuestbookPage(webapp2.RequestHandler):
                     </form>
                     {greeting_blockquotes}
                     <hr>
+                    
                     <input type="button" value="back to list" onClick="location.href='/'">
                 </body>
             </html>""" % (
-            urllib.urlencode({'guestbook_id': guestbook_id}), urllib.urlencode({'guestbook_id': guestbook_id}))).format(
+            urllib.urlencode({'guestbook_id': guestbook_id}),
+            urllib.urlencode({'guestbook_id': guestbook_id}),
+            urllib.urlencode({'guestbook_id': guestbook_id})
+        )).format(
             guestbook_name=cgi.escape(guestbook.name),
             greeting_blockquotes='\n'.join(greeting_blockquotes),
-            tag_blockquotes='\t'.join(tag_blockquotes)
+            tag_connected_blockquotes='\t'.join(tag_connected_blockquotes),
+            tag_unconnected_blockquotes='\t'.join(tag_unconnected_blockquotes)
         ))
 
-    def __createGreetingBlockquote(self, guestbook):
+    def __createGreetingBlockquotes(self, guestbook):
         ancestor_key = guestbook.key
         greetings = Greeting.query_greeting(ancestor_key)
         greeting_blockquotes = []
@@ -108,37 +129,41 @@ class GuestbookPage(webapp2.RequestHandler):
                                                    cgi.escape(greeting.content)))
         return greeting_blockquotes
 
-    def __createTagBlockquote(self, guestbook):
+    def __createTagConnectedBlockquotes(self, guestbook):
         tagkeys = guestbook.tag
         tag_blockquotes = []
         for key in tagkeys:
-            tag_blockquotes.append(
-                '%s' % cgi.escape(key.get().type)
-            )
+            tag_blockquotes.append(cgi.escape(key.get().type))
         return tag_blockquotes
+
+    def __createTagUnonnectedBlockquotes(self, guestbook):
+        type_all = []
+        alltags = Tag.query_tag()
+        for tag in alltags:
+            type_all.append(cgi.escape(tag.type))
+
+        type_connected = []
+        tagkeys = guestbook.tag
+        for key in tagkeys:
+            type_connected.append(cgi.escape(key.get().type))
+
+        type_all_set = set(type_all)
+        type_connected_set = set(type_connected)
+        type_unconnected = list(type_all_set - type_connected_set)
+
+        type_blockquotes = []
+        for type in type_unconnected:
+            type_blockquotes.append('''
+            <input type="checkbox" name="%s" value=true>%s
+            ''' % (cgi.escape(type), cgi.escape(type)))
+
+        return type_blockquotes
 
 
 class ListPage(webapp2.RequestHandler):
     def get(self):
-        # create {books}
-        guestbooks = Guestbook.query_book()
-        guestbook_links = []
-        for guestbook in guestbooks:
-            ancestor_key = guestbook.key
-            greetings = Greeting.query_greeting(ancestor_key)
-            guestbook_links.append('''
-                <tr>
-                    <td><a href="/books/%s">%s</a></td>
-                    <td>(%s)</td>
-                </tr>''' % (guestbook.key.id(), cgi.escape(guestbook.name), str(greetings.count())))
-
-        # create {tags}
-        tags = Tag.query_tag()
-        tag_links = []
-        for tag in tags:
-            tag_links.append('''
-            <input type="checkbox" name="%s" value=true>%s
-            ''' % (cgi.escape(tag.type), cgi.escape(tag.type)))
+        guestbook_links = self.__createBookLinks()
+        tag_links = self.__createTagLinks()
 
         self.response.out.write(textwrap.dedent("""
             <html>
@@ -166,6 +191,28 @@ class ListPage(webapp2.RequestHandler):
             </html>""").format(
             books='\n'.join(guestbook_links),
             tags='\t'.join(tag_links)))
+
+    def __createBookLinks(self):
+        guestbooks = Guestbook.query_book()
+        guestbook_links = []
+        for guestbook in guestbooks:
+            ancestor_key = guestbook.key
+            greetings = Greeting.query_greeting(ancestor_key)
+            guestbook_links.append('''
+                <tr>
+                    <td><a href="/books/%s">%s</a></td>
+                    <td>(%s)</td>
+                </tr>''' % (guestbook.key.id(), cgi.escape(guestbook.name), str(greetings.count())))
+        return guestbook_links
+
+    def __createTagLinks(self):
+        tags = Tag.query_tag()
+        tag_links = []
+        for tag in tags:
+            tag_links.append('''
+                <input type="checkbox" name="%s" value=true>%s
+                ''' % (cgi.escape(tag.type), cgi.escape(tag.type)))
+        return tag_links
 
 
 class SubmitForm(webapp2.RequestHandler):
@@ -244,11 +291,24 @@ class CreatetagForm(webapp2.RequestHandler):
         self.redirect('/')
 
 
+class AttachtagForm(webapp2.RequestHandler):
+    def post(self):
+        guestbook_id = self.request.get('guestbook_id')
+        guestbook = Guestbook.get_by_id(long(guestbook_id))
+        tags = Tag.query_tag()
+        for tag in tags:
+            if self.request.get(tag.type):
+                guestbook.tag.append(tag.key)
+        guestbook.put()
+        self.redirect('/books/' + str(guestbook_id))
+
+
 app = webapp2.WSGIApplication([
     webapp2.Route(r'/books/<guestbook_id:\d+>', handler=GuestbookPage, name='book'),
     webapp2.Route(r'/', handler=ListPage, name='book-list'),
     webapp2.Route(r'/sign', handler=SubmitForm, name='sign'),
     webapp2.Route(r'/createbook', handler=CreatebookForm, name='createbook'),
     webapp2.Route(r'/renamebook', handler=RenamebookForm, name='renamebook'),
-    webapp2.Route(r'/createtag', handler=CreatetagForm, name='createtag')
+    webapp2.Route(r'/createtag', handler=CreatetagForm, name='createtag'),
+    webapp2.Route(r'/attachtag', handler=AttachtagForm, name='attachtag')
 ])
