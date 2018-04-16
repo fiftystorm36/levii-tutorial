@@ -10,5 +10,5 @@ TODO
 - Tag の詳細
   - type という Property(どの種類のプロパティにするべきかも考えて選択する)を持つ
   - 同じ type の Tag が既に存在しているならそれを使いまわす(同一 type の Tag は1つだけしか存在しない)
-- [ ] /?tag={type} で、その Tag を持つ Book だけが表示される
+- [x] /?tag={type} で、その Tag を持つ Book だけが表示される
 - [ ] Greeting を削除できる
