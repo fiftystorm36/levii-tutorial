@@ -281,8 +281,11 @@ class SubmitForm(webapp2.RequestHandler):
 
 class DeleteGreetingForm(webapp2.RequestHandler):
     def post(self):
+        guestbook_id = self.request.get('guestbook_id')
+        guestbook = Guestbook.get_by_id(long(guestbook_id))
         greeting_id = self.request.get('greeting_id')
-        greeting = Greeting.get_by_id(long(greeting_id))
+        greeting = Greeting.get_by_id(parent=guestbook.key,
+                                      id=long(greeting_id))
         greeting.key.delete()
         guestbook_id = self.request.get('guestbook_id')
         self.redirect('/books/' + str(guestbook_id))
