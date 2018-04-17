@@ -79,8 +79,9 @@ class GuestbookPage(webapp2.RequestHandler):
             <html>
                 <body>
                     <h1>{guestbook_name}</h1>
-                    <form action="/renamebook?%s" method="post">
+                    <form action="/renamebook" method="post">
                         <div>
+                            <input type="hidden" name="guestbook_id" value="{guestbook_id}">
                             <input type="text" name="newguestbook_name" value="{guestbook_name}" size="40" maxlength="20">
                             <input type="submit" value="Rename Guestbook">
                         </div>
@@ -89,38 +90,37 @@ class GuestbookPage(webapp2.RequestHandler):
                     
                     <h2>Tag</h2>
                     <div>{tag_connected_blockquotes}</div>
-                    <form action="/attachtag?%s" method="post">
+                    <form action="/attachtag" method="post">
                         <div>
                             {tag_unconnected_blockquotes}
+                            <input type="hidden" name="guestbook_id" value="{guestbook_id}">
                             <input type="submit" value="Add selected tag to this book">
                         </div>
                     </form>
                     <form action="/createtag" method="post">
                         <div>
                             <input type="text" name="tag_type" size="40" maxlength="20">
+                            <input type="hidden" name="guestbook_id" value="{guestbook_id}">
                             <input type="submit" value="Create New Tag">
                         </div>
                     </form>
                     
                     <h2>Sign</h2>
-                    <form action="/sign?%s" method="post">
+                    <form action="/sign" method="post">
                         <div>
                             <textarea name="content" rows="5" cols="60"></textarea>
-                        </div>
-                        <div>
+                            <input type="hidden" name="guestbook_id" value="{guestbook_id}">
                             <input type="submit" value="Sign Guestbook">
                         </div>
                     </form>
+                    
                     {greeting_blockquotes}
                     <hr>
                     
                     <input type="button" value="back to list" onClick="location.href='/'">
                 </body>
-            </html>""" % (
-            urllib.urlencode({'guestbook_id': guestbook_id}),
-            urllib.urlencode({'guestbook_id': guestbook_id}),
-            urllib.urlencode({'guestbook_id': guestbook_id})
-        )).format(
+            </html>""").format(
+            guestbook_id=guestbook_id,
             guestbook_name=cgi.escape(guestbook.name),
             greeting_blockquotes='\n'.join(greeting_blockquotes),
             tag_connected_blockquotes='\t'.join(tag_connected_blockquotes),
@@ -132,9 +132,21 @@ class GuestbookPage(webapp2.RequestHandler):
         greetings = Greeting.query_greeting(ancestor_key)
         greeting_blockquotes = []
         for greeting in greetings:
-            greeting_blockquotes.append(
-                '%s<blockquote>%s</blockquote>' % (cgi.escape(greeting.date.strftime("%Y/%m/%d %H:%M:%S")),
-                                                   cgi.escape(greeting.content)))
+            greeting_blockquotes.append('''
+            <form action="/delete" method="post">
+                <div>
+                    %s
+                    <input type="hidden" name="guestbook_id" value="%s">
+                    <input type="hidden" name="greeting_id" value="%s">
+                    <input type="submit" value="delete">
+                </div>
+            </form>
+            <blockquote>%s</blockquote>
+            ''' % (
+                cgi.escape(greeting.date.strftime("%Y/%m/%d %H:%M:%S")),
+                guestbook.key.id(),
+                greeting.key.id(),
+                cgi.escape(greeting.content)))
         return greeting_blockquotes
 
     def __createTagConnectedBlockquotes(self, guestbook):
@@ -225,7 +237,9 @@ class ListPage(webapp2.RequestHandler):
                 <tr>
                     <td><a href="/books/%s">%s</a></td>
                     <td>(%s)</td>
-                </tr>''' % (guestbook.key.id(), cgi.escape(guestbook.name), str(greetings.count())))
+                </tr>''' % (guestbook.key.id(),
+                            cgi.escape(guestbook.name),
+                            str(greetings.count())))
         return guestbook_links
 
     def __createBookLinksWithTag(self, tag_type):
@@ -262,6 +276,15 @@ class SubmitForm(webapp2.RequestHandler):
         greeting = Greeting(parent=guestbook.key,
                             content=self.request.get('content'))
         greeting.put()
+        self.redirect('/books/' + str(guestbook_id))
+
+
+class DeleteGreetingForm(webapp2.RequestHandler):
+    def post(self):
+        greeting_id = self.request.get('greeting_id')
+        greeting = Greeting.get_by_id(long(greeting_id))
+        greeting.key.delete()
+        guestbook_id = self.request.get('guestbook_id')
         self.redirect('/books/' + str(guestbook_id))
 
 
@@ -328,7 +351,12 @@ class CreatetagForm(webapp2.RequestHandler):
             tag = Tag(type=type)
             tag.put()
             time.sleep(0.1)  # wait for put() have finished
-        self.redirect('/')
+
+        guestbook_id = self.request.get('guestbook_id')
+        if guestbook_id:
+            self.redirect('/books/' + str(guestbook_id))
+        else:
+            self.redirect('/')
 
 
 class AttachtagForm(webapp2.RequestHandler):
@@ -347,6 +375,7 @@ app = webapp2.WSGIApplication([
     webapp2.Route(r'/books/<guestbook_id:\d+>', handler=GuestbookPage, name='book'),
     webapp2.Route(r'/', handler=ListPage, name='book-list'),
     webapp2.Route(r'/sign', handler=SubmitForm, name='sign'),
+    webapp2.Route(r'/delete', handler=DeleteGreetingForm, name='deletegreeting'),
     webapp2.Route(r'/createbook', handler=CreatebookForm, name='createbook'),
     webapp2.Route(r'/renamebook', handler=RenamebookForm, name='renamebook'),
     webapp2.Route(r'/createtag', handler=CreatetagForm, name='createtag'),
