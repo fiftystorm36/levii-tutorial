@@ -1,17 +1,15 @@
-## App Engine Datastore NDB Overview Sample
+2 で作った Guestbook を別のディレクトリにコピーして、以下の要求を満たすように変更して push して下さい。(チューターに連絡して確認してもらうこと)
 
-[![Open in Cloud Shell][shell_img]][shell_link]
-
-[shell_img]: http://gstatic.com/cloudssh/images/open-btn.png
-[shell_link]: https://console.cloud.google.com/cloudshell/open?git_repo=https://github.com/GoogleCloudPlatform/python-docs-samples&page=editor&open_in_editor=appengine/standard/ndb/overview/README.md
-
-This is a sample app for Google App Engine that demonstrates the [Datastore NDB Python API](https://cloud.google.com/appengine/docs/python/ndb/).
-
-<!-- auto-doc-link -->
-These samples are used on the following documentation page:
-
-> https://cloud.google.com/appengine/docs/python/ndb/
-
-<!-- end-auto-doc-link -->
-
-Refer to the [App Engine Samples README](../../README.md) for information on how to run and deploy this sample.
+TODO
+- [x] /books/{id} で Book の更新をできるようにする
+  - 具体的には name を変更できるようにして下さい
+- [x] Book の追加や更新時に Tag を追加できるようにする
+  - [x] Book に tag という KeyProperty を追加する
+  - [x] tag はいくつでも追加できる
+- [x] Book を表示する場合は Tag も一緒に表示する
+- Tag の詳細
+  - type という Property(どの種類のプロパティにするべきかも考えて選択する)を持つ
+  - 同じ type の Tag が既に存在しているならそれを使いまわす(同一 type の Tag は1つだけしか存在しない)
+- [x] /?tag={type} で、その Tag を持つ Book だけが表示される
+- [x] Greeting を削除できる
+- [ ] コードレビューをもらって確認する
