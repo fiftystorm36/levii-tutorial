@@ -275,7 +275,8 @@ class SubmitForm(webapp2.RequestHandler):
         guestbook = Guestbook.get_by_id(long(guestbook_id))
         greeting = Greeting(parent=guestbook.key,
                             content=self.request.get('content'))
-        greeting.put()
+        future = greeting.put_async()
+        future.get_result()
         self.redirect('/books/' + str(guestbook_id))
 
 
@@ -297,7 +298,8 @@ class CreatebookForm(webapp2.RequestHandler):
         guestbook_name = self.__decideBookName(guestbook_name_candidate)
 
         guestbook = Guestbook(name=guestbook_name)
-        guestbook.put()
+        future = guestbook.put_async()
+        future.get_result()
 
         self.__attachTagToBook(guestbook)
 
@@ -332,7 +334,8 @@ class CreatebookForm(webapp2.RequestHandler):
         for tag in tags:
             if self.request.get(tag.type):
                 guestbook.tag.append(tag.key)
-        guestbook.put()
+        future = guestbook.put_async()
+        future.get_result()
 
 
 class RenamebookForm(webapp2.RequestHandler):
@@ -341,7 +344,8 @@ class RenamebookForm(webapp2.RequestHandler):
         newguestbook_name = self.request.get('newguestbook_name')
         guestbook = Guestbook.get_by_id(long(guestbook_id))
         guestbook.name = newguestbook_name
-        guestbook.put()
+        future = guestbook.put_async()
+        future.get_result()
         self.redirect('/books/' + str(guestbook_id))
 
 
@@ -352,7 +356,8 @@ class CreatetagForm(webapp2.RequestHandler):
             pass
         else:
             tag = Tag(type=type)
-            tag.put()
+            future = tag.put_async()
+            future.get_result()
             time.sleep(0.1)  # wait for put() have finished
 
         guestbook_id = self.request.get('guestbook_id')
@@ -370,7 +375,8 @@ class AttachtagForm(webapp2.RequestHandler):
         for tag in tags:
             if self.request.get(tag.type):
                 guestbook.tag.append(tag.key)
-        guestbook.put()
+        future = guestbook.put_async()
+        future.get_result()
         self.redirect('/books/' + str(guestbook_id))
 
 
