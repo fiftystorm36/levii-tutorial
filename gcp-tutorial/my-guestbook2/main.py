@@ -150,10 +150,15 @@ class GuestbookPage(webapp2.RequestHandler):
         return greeting_blockquotes
 
     def __createTagConnectedBlockquotes(self, guestbook):
-        tagkeys = guestbook.tag
-        tag_blockquotes = []
-        for key in tagkeys:
-            tag_blockquotes.append(cgi.escape(key.get().type))
+        @ndb.tasklet
+        def get_tag_types(guestbook):
+            tagkeys = guestbook.tag
+            tags = yield ndb.get_multi_async([tagkey for tagkey in tagkeys])
+            types = [tag.type for tag in tags]
+            raise ndb.Return(types)
+
+        tag_blockquotes_future = get_tag_types(guestbook)
+        tag_blockquotes = tag_blockquotes_future.get_result()
         return tag_blockquotes
 
     def __createTagUnonnectedBlockquotes(self, guestbook):
@@ -165,7 +170,8 @@ class GuestbookPage(webapp2.RequestHandler):
         type_connected = []
         tagkeys = guestbook.tag
         for key in tagkeys:
-            type_connected.append(cgi.escape(key.get().type))
+            tag_future = key.get_async()
+            type_connected.append(cgi.escape(tag_future.get_result().type))
 
         type_all_set = set(type_all)
         type_connected_set = set(type_connected)
@@ -352,7 +358,8 @@ class RenamebookForm(webapp2.RequestHandler):
 class CreatetagForm(webapp2.RequestHandler):
     def post(self):
         type = self.request.get('tag_type')
-        if Tag.query(Tag.type == type).get() or type == '':
+        tag_future = Tag.query(Tag.type == type).get_async()
+        if tag_future.get_result() or type == '':
             pass
         else:
             tag = Tag(type=type)
