@@ -150,10 +150,15 @@ class GuestbookPage(webapp2.RequestHandler):
         return greeting_blockquotes
 
     def __createTagConnectedBlockquotes(self, guestbook):
-        tagkeys = guestbook.tag
-        tag_blockquotes = []
-        for key in tagkeys:
-            tag_blockquotes.append(cgi.escape(key.get().type))
+        @ndb.tasklet
+        def get_tag_types(guestbook):
+            tagkeys = guestbook.tag
+            tags = yield ndb.get_multi_async([tagkey for tagkey in tagkeys])
+            types = [tag.type for tag in tags]
+            raise ndb.Return(types)
+
+        tag_blockquotes_future = get_tag_types(guestbook)
+        tag_blockquotes = tag_blockquotes_future.get_result()
         return tag_blockquotes
 
     def __createTagUnonnectedBlockquotes(self, guestbook):
@@ -165,7 +170,8 @@ class GuestbookPage(webapp2.RequestHandler):
         type_connected = []
         tagkeys = guestbook.tag
         for key in tagkeys:
-            type_connected.append(cgi.escape(key.get().type))
+            tag_future = key.get_async()
+            type_connected.append(cgi.escape(tag_future.get_result().type))
 
         type_all_set = set(type_all)
         type_connected_set = set(type_connected)
@@ -275,7 +281,8 @@ class SubmitForm(webapp2.RequestHandler):
         guestbook = Guestbook.get_by_id(long(guestbook_id))
         greeting = Greeting(parent=guestbook.key,
                             content=self.request.get('content'))
-        greeting.put()
+        future = greeting.put_async()
+        future.get_result()
         self.redirect('/books/' + str(guestbook_id))
 
 
@@ -297,7 +304,8 @@ class CreatebookForm(webapp2.RequestHandler):
         guestbook_name = self.__decideBookName(guestbook_name_candidate)
 
         guestbook = Guestbook(name=guestbook_name)
-        guestbook.put()
+        future = guestbook.put_async()
+        future.get_result()
 
         self.__attachTagToBook(guestbook)
 
@@ -332,7 +340,8 @@ class CreatebookForm(webapp2.RequestHandler):
         for tag in tags:
             if self.request.get(tag.type):
                 guestbook.tag.append(tag.key)
-        guestbook.put()
+        future = guestbook.put_async()
+        future.get_result()
 
 
 class RenamebookForm(webapp2.RequestHandler):
@@ -341,18 +350,21 @@ class RenamebookForm(webapp2.RequestHandler):
         newguestbook_name = self.request.get('newguestbook_name')
         guestbook = Guestbook.get_by_id(long(guestbook_id))
         guestbook.name = newguestbook_name
-        guestbook.put()
+        future = guestbook.put_async()
+        future.get_result()
         self.redirect('/books/' + str(guestbook_id))
 
 
 class CreatetagForm(webapp2.RequestHandler):
     def post(self):
         type = self.request.get('tag_type')
-        if Tag.query(Tag.type == type).get() or type == '':
+        tag_future = Tag.query(Tag.type == type).get_async()
+        if tag_future.get_result() or type == '':
             pass
         else:
             tag = Tag(type=type)
-            tag.put()
+            future = tag.put_async()
+            future.get_result()
             time.sleep(0.1)  # wait for put() have finished
 
         guestbook_id = self.request.get('guestbook_id')
@@ -370,7 +382,8 @@ class AttachtagForm(webapp2.RequestHandler):
         for tag in tags:
             if self.request.get(tag.type):
                 guestbook.tag.append(tag.key)
-        guestbook.put()
+        future = guestbook.put_async()
+        future.get_result()
         self.redirect('/books/' + str(guestbook_id))
 
 
