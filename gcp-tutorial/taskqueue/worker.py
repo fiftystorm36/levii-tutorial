@@ -16,6 +16,7 @@
 
 from google.appengine.ext import ndb
 import webapp2
+import time
 
 
 COUNTER_KEY = 'default counter'
@@ -39,8 +40,23 @@ class UpdateCounterHandler(webapp2.RequestHandler):
 
         update_counter()
 
+class hoge(webapp2.RequestHandler):
+    def post(self):
+
+        # This task should run at most once per second because of the datastore
+        # transaction write throughput.
+        @ndb.transactional
+        def increment10_after_60s():
+            time.sleep(60)
+            counter = Counter.get_or_insert(COUNTER_KEY, count=0)
+            counter.count += 10
+            counter.put()
+
+        increment10_after_60s()
+
 
 app = webapp2.WSGIApplication([
-    ('/update_counter', UpdateCounterHandler)
+    ('/update_counter', UpdateCounterHandler),
+    ('/hoge', hoge)
 ], debug=True)
 # [END all]

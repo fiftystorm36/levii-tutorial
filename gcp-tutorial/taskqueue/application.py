@@ -29,14 +29,23 @@ class MainPageHandler(webapp2.RequestHandler):
         counter = Counter.get_by_id(COUNTER_KEY)
         count = counter.count if counter else 0
 
+        self.response.write("""Count: {count}
+                            <hr>""".format(count=count))
+
         self.response.write("""
-            Count: {count}<br>
             <form method="post" action="/enqueue">
                 <label>Increment amount</label>
                 <input name="amount" value="1">
                 <button>Enqueue task</button>
             </form>
-        """.format(count=count))
+        """)
+
+        self.response.write("""
+            <form method="post" action="/enqueuehoge">
+                <label>Increment amount 10 after a minutes</label>
+                <button>Enqueue task</button>
+            </form>
+        """)
 
 
 class EnqueueTaskHandler(webapp2.RequestHandler):
@@ -51,6 +60,14 @@ class EnqueueTaskHandler(webapp2.RequestHandler):
         self.response.write(
             'Task {} enqueued, ETA {}.'.format(task.name, task.eta))
 
+class EnqueueHogeTaskHandler(webapp2.RequestHandler):
+    def post(self):
+        task = taskqueue.add(
+            url='/hoge',
+            target='worker')
+
+        self.response.write(
+            'Task {} enqueued, ETA {}.'.format(task.name, task.eta))
 
 # AsyncEnqueueTaskHandler behaves the same as EnqueueTaskHandler, but shows
 # how to queue the task using the asyncronous API. This is not wired up by
@@ -78,5 +95,6 @@ class AsyncEnqueueTaskHandler(webapp2.RequestHandler):
 app = webapp2.WSGIApplication([
     ('/', MainPageHandler),
     ('/enqueue', EnqueueTaskHandler),
+    ('/enqueuehoge', EnqueueHogeTaskHandler),
     ('/enqueue_async', AsyncEnqueueTaskHandler)
 ], debug=True)
