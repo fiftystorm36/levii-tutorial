@@ -23,6 +23,12 @@ from google.appengine.ext import ndb
 
 import jinja2
 import webapp2
+from webapp2_extras import sessions
+
+config = {}
+config['webapp2_extras.sessions'] = {
+    'secret_key': 'my-super-secret-key',
+}
 
 JINJA_ENVIRONMENT = jinja2.Environment(
     loader=jinja2.FileSystemLoader(os.path.dirname(__file__)),
@@ -60,8 +66,25 @@ class Greeting(ndb.Model):
 # [END greeting]
 
 
+class BaseHandler(webapp2.RequestHandler):
+    def dispatch(self):
+        # Get a session store for this request.
+        self.session_store = sessions.get_store(request=self.request)
+
+        try:
+            # Dispatch the request.
+            webapp2.RequestHandler.dispatch(self)
+        finally:
+            # Save all sessions.
+            self.session_store.save_sessions(self.response)
+
+    @webapp2.cached_property
+    def session(self):
+        # Returns a session using the default cookie key.
+        return self.session_store.get_session()
+
 # [START main_page]
-class MainPage(webapp2.RequestHandler):
+class MainPage(BaseHandler):
 
     def get(self):
         guestbook_name = self.request.get('guestbook_name',
@@ -92,7 +115,7 @@ class MainPage(webapp2.RequestHandler):
 
 
 # [START guestbook]
-class Guestbook(webapp2.RequestHandler):
+class Guestbook(BaseHandler):
 
     def post(self):
         # We set the same parent key on the 'Greeting' to ensure each
@@ -116,19 +139,19 @@ class Guestbook(webapp2.RequestHandler):
         self.redirect('/?' + urllib.urlencode(query_params))
 # [END guestbook]
 
-class SignupPage(webapp2.RequestHandler):
+class SignupPage(BaseHandler):
     pass
 
-class LoginPage(webapp2.RequestHandler):
+class LoginPage(BaseHandler):
     pass
 
-class SignupForm(webapp2.RequestHandler):
+class SignupForm(BaseHandler):
     pass
 
-class LoginForm(webapp2.RequestHandler):
+class LoginForm(BaseHandler):
     pass
 
-class LogoutForm(webapp2.RequestHandler):
+class LogoutForm(BaseHandler):
     pass
 
 # [START app]
@@ -140,5 +163,5 @@ app = webapp2.WSGIApplication([
     ('/login', LoginPage),
     ('/loginform', LoginForm),
     ('/logoutform', LogoutForm)
-], debug=True)
+], debug=True, config=config)
 # [END app]
