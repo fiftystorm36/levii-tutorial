@@ -40,7 +40,6 @@ DEFAULT_GUESTBOOK_NAME = 'default_guestbook'
 
 def guestbook_key(guestbook_name=DEFAULT_GUESTBOOK_NAME):
     """Constructs a Datastore key for a Guestbook entity.
-
     We use guestbook_name as the key.
     """
     return ndb.Key('Guestbook', guestbook_name)
@@ -107,8 +106,8 @@ class Guestbook(webapp2.RequestHandler):
 
         if users.get_current_user():
             greeting.author = Author(
-                    identity=users.get_current_user().user_id(),
-                    email=users.get_current_user().email())
+                identity=users.get_current_user().user_id(),
+                email=users.get_current_user().email())
 
         greeting.content = self.request.get('content')
         greeting.put()
@@ -117,10 +116,29 @@ class Guestbook(webapp2.RequestHandler):
         self.redirect('/?' + urllib.urlencode(query_params))
 # [END guestbook]
 
+class SignupPage(webapp2.RequestHandler):
+    pass
+
+class LoginPage(webapp2.RequestHandler):
+    pass
+
+class SignupForm(webapp2.RequestHandler):
+    pass
+
+class LoginForm(webapp2.RequestHandler):
+    pass
+
+class LogoutForm(webapp2.RequestHandler):
+    pass
 
 # [START app]
 app = webapp2.WSGIApplication([
     ('/', MainPage),
     ('/sign', Guestbook),
+    ('/signup', SignupPage),
+    ('/signupform', SignupForm),
+    ('/login', LoginPage),
+    ('/loginform', LoginForm),
+    ('/logoutform', LogoutForm)
 ], debug=True)
 # [END app]
