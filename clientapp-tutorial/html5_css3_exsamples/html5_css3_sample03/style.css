@@ -71,14 +71,14 @@ header a:link, nav a:visited {
     font-weight:normal;
 }
 nav {
-    float:right;
-    width:200px;
+    float:left;
+    width:150px;
 }
 nav h1 {
     font-size:1.4em;
 }
 section {
-    float:right;
+    float:left;
     width:656px;
     text-align:left;
     margin-bottom:10px;
