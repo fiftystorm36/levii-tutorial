@@ -56,6 +56,7 @@ class Author(ndb.Model):
     """Sub model for representing an author."""
     identity = ndb.StringProperty(indexed=False)
     email = ndb.StringProperty(indexed=False)
+    password = ndb.StringProperty(indexed=False)
 
 
 class Greeting(ndb.Model):
@@ -118,17 +119,17 @@ class MainPage(BaseHandler):
 class Guestbook(BaseHandler):
 
     def post(self):
-        # We set the same parent key on the 'Greeting' to ensure each
-        # Greeting is in the same entity group. Queries across the
-        # single entity group will be consistent. However, the write
+        # we set the same parent key on the 'greeting' to ensure each
+        # greeting is in the same entity group. queries across the
+        # single entity group will be consistent. however, the write
         # rate to a single entity group should be limited to
         # ~1/second.
         guestbook_name = self.request.get('guestbook_name',
-                                          DEFAULT_GUESTBOOK_NAME)
-        greeting = Greeting(parent=guestbook_key(guestbook_name))
+                                          default_guestbook_name)
+        greeting = greeting(parent=guestbook_key(guestbook_name))
 
         if users.get_current_user():
-            greeting.author = Author(
+            greeting.author = author(
                 identity=users.get_current_user().user_id(),
                 email=users.get_current_user().email())
 
@@ -140,10 +141,40 @@ class Guestbook(BaseHandler):
 # [END guestbook]
 
 class SignupPage(BaseHandler):
-    pass
+    def get(self):
+        self.response.write("""
+        <html><body>
+            <h1>Sign Up</h1>
+            <form action="/signupform" method="post">
+                <div>
+                    id: <input type="text" name="id" size="40" maxlength="20">
+                    <br>
+                    password: <input type="password" name="password" size="40" maxlength="20">
+                    <hr>
+                    <input type="submit" value="Sign Up">
+                </div>
+            </form>
+            <a href="/login">or login</a>
+        </body></html>"""
+        )
 
 class LoginPage(BaseHandler):
-    pass
+    def get(self):
+        self.response.write("""
+        <html><body>
+            <h1>Login</h1>
+            <form action="/loginform" method="post">
+                <div>
+                    id: <input type="text" name="id" size="40" maxlength="20">
+                    <br>
+                    password: <input type="password" name="password" size="40" maxlength="20">
+                    <hr>
+                    <input type="submit" value="Login">
+                </div>
+                <a href="/signup">or signup</a>
+            </form>
+        </body></html>
+        """)
 
 class SignupForm(BaseHandler):
     pass
