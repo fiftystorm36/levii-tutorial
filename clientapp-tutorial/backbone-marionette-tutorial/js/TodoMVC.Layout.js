@@ -3,6 +3,8 @@
 var Mn = require('backbone.marionette');
 var Backbone = require('backbone');
 var Filter = require('./TodoMVC.FilterState');
+var templateHeader = require('../hbs/template-header.hbs');
+var templateFooter = require('../hbs/template-footer.hbs');
 
 'use strict';
 
@@ -23,7 +25,7 @@ module.exports.RootLayout = Mn.View.extend({
 // ------------------
 module.exports.HeaderLayout = Mn.View.extend({
 
-    template: '#template-header',
+    template: templateHeader,//'#template-header',
 
     // UI bindings create cached attributes that
     // point to jQuery selected objects
@@ -62,7 +64,7 @@ module.exports.HeaderLayout = Mn.View.extend({
 // Layout Footer View
 // ------------------
 module.exports.FooterLayout = Mn.View.extend({
-    template: '#template-footer',
+    template: templateFooter,//'#template-footer',
 
     // UI bindings create cached attributes that
     // point to jQuery selected objects

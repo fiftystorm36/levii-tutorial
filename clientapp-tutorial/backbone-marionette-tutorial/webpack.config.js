@@ -13,6 +13,10 @@ const config = {
                 test: /\.css$/,
                 loader: ['style-loader','css-loader']
             },
+            {
+                test: /\.hbs$/,
+                loader: ['handlebars-loader']
+            }
         ]
     },
     plugins: [
