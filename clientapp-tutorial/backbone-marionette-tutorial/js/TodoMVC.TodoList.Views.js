@@ -1,144 +1,162 @@
 /*global TodoMVC: true, Backbone */
 
-var TodoMVC = TodoMVC || {};
+var Mn = require('backbone.marionette');
+var Backbone = require('backbone');
+var Radio = require('backbone.radio');
 
-(function () {
-    'use strict';
+'use strict';
 
-    var filterChannel = Backbone.Radio.channel('filter');
+var TodoMVC = {};
 
-    TodoMVC.TodoView = Mn.View.extend({
+var filterChannel = Radio.channel('filter');
 
-        tagName: 'li',
+// Todo List Item View
+// -------------------
+//
+// Display an individual todo item, and respond to changes
+// that are made to the item, including marking completed.
+TodoMVC.TodoView = Mn.View.extend({
 
-        template: '#template-todoItemView',
+    tagName: 'li',
 
-        className: function () {
-            return this.model.get('completed') ? 'completed' : 'active';
-        },
+    template: '#template-todoItemView',
 
-        ui: {
-            edit: '.edit',
-            destroy: '.destroy',
-            label: 'label',
-            toggle: '.toggle'
-        },
+    className: function () {
+        return this.model.get('completed') ? 'completed' : 'active';
+    },
 
-        events: {
-            'click @ui.destroy': 'deleteModel',
-            'dblclick @ui.label': 'onEditClick',
-            'keydown @ui.edit': 'onEditKeypress',
-            'focusout @ui.edit': 'onEditFocusout',
-            'click @ui.toggle': 'toggle'
-        },
+    ui: {
+        edit: '.edit',
+        destroy: '.destroy',
+        label: 'label',
+        toggle: '.toggle'
+    },
 
-        modelEvents: {
-            change: 'render'
-        },
+    events: {
+        'click @ui.destroy': 'deleteModel',
+        'dblclick @ui.label': 'onEditClick',
+        'keydown @ui.edit': 'onEditKeypress',
+        'focusout @ui.edit': 'onEditFocusout',
+        'click @ui.toggle': 'toggle'
+    },
 
-        deleteModel: function () {
-            this.model.destroy();
-        },
+    modelEvents: {
+        change: 'render'
+    },
 
-        toggle: function () {
-            this.model.toggle().save();
-        },
+    deleteModel: function () {
+        this.model.destroy();
+    },
 
-        onEditClick: function () {
-            this.$el.addClass('editing');
-            this.ui.edit.focus();
-            this.ui.edit.val(this.ui.edit.val());
-        },
+    toggle: function () {
+        this.model.toggle().save();
+    },
 
-        onEditFocusout: function () {
-            var todoText = this.ui.edit.val().trim();
-            if (todoText) {
-                this.model.set('title', todoText).save();
-                this.$el.removeClass('editing');
-            } else {
-                this.destroy();
-            }
-        },
+    onEditClick: function () {
+        this.$el.addClass('editing');
+        this.ui.edit.focus();
+        this.ui.edit.val(this.ui.edit.val());
+    },
 
-        onEditKeypress: function (e) {
-            var ENTER_KEY = 13;
-            var ESC_KEY = 27;
-
-            if (e.which === ENTER_KEY) {
-                this.onEditFocusout();
-                return;
-            }
-
-            if (e.which === ESC_KEY) {
-                this.ui.edit.val(this.model.get('title'));
-                this.$el.removeClass('editing');
-            }
+    onEditFocusout: function () {
+        var todoText = this.ui.edit.val().trim();
+        if (todoText) {
+            this.model.set('title', todoText).save();
+            this.$el.removeClass('editing');
+        } else {
+            this.destroy();
         }
-    });
+    },
 
-    TodoMVC.ListViewBody = Mn.CollectionView.extend({
-        tagName: 'ul',
+    onEditKeypress: function (e) {
+        var ENTER_KEY = 13;
+        var ESC_KEY = 27;
 
-        id: 'todo-list',
-
-        childView: TodoMVC.TodoView,
-
-        filter: function (child) {
-            var filteredOn = filterChannel.request('filterState').get('filter');
-            return child.matchesFilter(filteredOn);
+        if (e.which === ENTER_KEY) {
+            this.onEditFocusout();
+            return;
         }
-    });
 
-    TodoMVC.ListView = Mn.View.extend({
-
-        template: '#template-todoListView',
-
-        regions: {
-            listBody: {
-                el: 'ul',
-                replaceElement: true
-            }
-        },
-
-        ui: {
-            toggle: '#toggle-all'
-        },
-
-        events: {
-            'click @ui.toggle': 'onToggleAllClick'
-        },
-
-        collectionEvents: {
-            'change:completed': 'render',
-            all: 'setCheckAllState'
-        },
-
-        initialize: function () {
-            this.listenTo(filterChannel.request('filterState'), 'change:filter', this.render, this);
-        },
-
-        setCheckAllState: function () {
-            function reduceCompleted(left, right) {
-                return left && right.get('completed');
-            }
-
-            var allCompleted = this.collection.reduce(reduceCompleted, true);
-            this.ui.toggle.prop('checked', allCompleted);
-            this.$el.parent().toggle(!!this.collection.length);
-        },
-
-        onToggleAllClick: function (e) {
-            var isChecked = e.currentTarget.checked;
-
-            this.collection.each(function (todo) {
-                todo.save({completed: isChecked});
-            });
-        },
-
-        onRender: function () {
-            this.showChildView('listBody', new TodoMVC.ListViewBody({
-                collection: this.collection
-            }));
+        if (e.which === ESC_KEY) {
+            this.ui.edit.val(this.model.get('title'));
+            this.$el.removeClass('editing');
         }
-    });
-})();
+    }
+});
+
+// Item List View Body
+// --------------
+//
+// Controls the rendering of the list of items, including the
+// filtering of items for display.
+TodoMVC.ListViewBody = Mn.CollectionView.extend({
+    tagName: 'ul',
+
+    className: 'todo-list',
+
+    childView: TodoMVC.TodoView,
+
+    filter: function (child) {
+        var filteredOn = filterChannel.request('filterState').get('filter');
+        return child.matchesFilter(filteredOn);
+    }
+});
+
+// Item List View
+// --------------
+//
+// Manages List View
+TodoMVC.ListView = Mn.View.extend({
+
+    template: '#template-todoListView',
+
+    regions: {
+        listBody: {
+            el: 'ul',
+            replaceElement: true
+        }
+    },
+
+    ui: {
+        toggle: '.toggle-all'
+    },
+
+    events: {
+        'click @ui.toggle': 'onToggleAllClick'
+    },
+
+    collectionEvents: {
+        'change:completed': 'render',
+        all: 'setCheckAllState'
+    },
+
+    initialize: function () {
+        this.listenTo(filterChannel.request('filterState'), 'change:filter', this.render, this);
+    },
+
+    setCheckAllState: function () {
+        function reduceCompleted(left, right) {
+            return left && right.get('completed');
+        }
+
+        var allCompleted = this.collection.reduce(reduceCompleted, true);
+        this.ui.toggle.prop('checked', allCompleted);
+        this.$el.parent().toggle(!!this.collection.length);
+    },
+
+    onToggleAllClick: function (e) {
+        var isChecked = e.currentTarget.checked;
+
+        this.collection.each(function (todo) {
+            todo.save({completed: isChecked});
+        });
+    },
+
+    onRender: function () {
+        this.showChildView('listBody', new TodoMVC.ListViewBody({
+            collection: this.collection
+        }));
+    }
+});
+
+module.exports = TodoMVC;
